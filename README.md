@@ -36,11 +36,5 @@ The main purpose of TrustVault is to develop a secure document-sharing system wh
 - Backend Security Testing
 - Automated Verification
 
-## Future Enhancements
-
-- Advanced Security Monitoring
-- Multi-Factor Authentication
-- Improved Audit Logging
-
 ## Developer
 Revathi Poludasu
