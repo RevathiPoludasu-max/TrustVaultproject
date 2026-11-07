@@ -1,0 +1,35 @@
+# TrustVault Backend Dependencies
+# Python 3.11+
+
+# Web framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+aiosqlite==0.20.0  # For tests only
+
+# Authentication & Security
+pyjwt==2.10.0
+argon2-cffi==23.1.0  # Argon2id password hashing
+python-magic==0.4.27  # File type magic byte detection
+cryptography==44.0.0  # AES-256-GCM file encryption
+
+# Settings
+pydantic==2.10.0
+pydantic-settings==2.6.1
+
+# Redis (stream token invalidation)
+redis[hiredis]==5.2.0
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+httpx==0.28.0  # Async HTTP client for integration tests
+
+# Utilities
+python-dotenv==1.0.1

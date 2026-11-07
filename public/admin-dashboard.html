@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustVault — Admin Security Console</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .admin-pill {
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid rgba(139, 92, 246, 0.4);
+      color: #c084fc;
+      padding: 0.25rem 0.6rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-top">
+      <a href="/admin/dashboard" class="brand-wrapper">
+        <img src="/favicon.svg" alt="TrustVault Logo" class="brand-logo">
+        <div>
+          <span class="brand-title">TrustVault</span>
+          <span class="brand-subtitle">Administrator Security Console</span>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <span class="badge badge-admin" id="userRoleBadge">ADMIN</span>
+        <span id="userEmailSpan" style="font-size:0.82rem; color:var(--text-muted); font-weight:600;">admin@trustvault.local</span>
+        <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+      </div>
+    </div>
+
+    <nav class="nav-bar">
+      <button class="nav-tab active" data-tab="overviewTab">📊 Overview & Metrics</button>
+      <button class="nav-tab" data-tab="usersTab">👥 User Management</button>
+      <button class="nav-tab" data-tab="auditTab">📋 Audit Logs & Events</button>
+      <button class="nav-tab" data-tab="documentsTab">📁 System Document Registry</button>
+    </nav>
+  </header>
+
+  <main class="main-container">
+    <!-- Top Stats -->
+    <div class="stats-grid">
+      <div class="stat-card stat-card-purple">
+        <div class="stat-icon" style="color:#c084fc; background:rgba(139,92,246,0.15);">👥</div>
+        <div class="stat-info">
+          <span id="statTotalUsers" class="stat-value">--</span>
+          <span class="stat-label">Total Users</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-cyan">
+        <div class="stat-icon">📁</div>
+        <div class="stat-info">
+          <span id="statTotalDocs" class="stat-value">--</span>
+          <span class="stat-label">System Documents</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-amber">
+        <div class="stat-icon" style="color:var(--accent-amber); background:rgba(245,158,11,0.15);">🔑</div>
+        <div class="stat-info">
+          <span id="statPermChanges" class="stat-value">--</span>
+          <span class="stat-label">Permission Changes</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-emerald">
+        <div class="stat-icon" style="color:var(--accent-emerald); background:rgba(16,185,129,0.15);">🛡️</div>
+        <div class="stat-info">
+          <span id="statAuditTotal" class="stat-value">--</span>
+          <span class="stat-label">Sealed Audit Logs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Isolation Banner -->
+    <div style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.3); border-radius:var(--radius-md); padding:0.85rem 1.25rem; margin-bottom:1.5rem; font-size:0.82rem; color:#e9d5ff;">
+      🛡️ <strong>Zero-Trust Admin Isolation Active:</strong> Administrators can monitor system metadata, manage user accounts, and verify cryptographic audit trails. By strict security policy, Administrators CANNOT download private document binaries without an explicit OWNER grant.
+    </div>
+
+    <!-- TAB 1: Overview -->
+    <section id="overviewTab" class="tab-pane active">
+      <div class="vault-card">
+        <h2 class="section-title">📊 Platform Security Health</h2>
+        <p class="section-desc">Real-time status of system users, permission alterations, and cryptographic chain seals.</p>
+
+        <div style="margin-top:1.25rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
+          <div style="background:rgba(7,13,24,0.6); border:1px solid var(--bg-card-border); border-radius:var(--radius-md); padding:1.25rem;">
+            <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:var(--accent-cyan);">🔐 Chain Integrity Status</h3>
+            <div id="chainHealthStatus" style="font-size:0.85rem; margin-bottom:0.75rem;">Verifying cryptographic seals...</div>
+            <button class="btn btn-secondary btn-sm" onclick="verifyChain()">Verify HMAC Chain</button>
+          </div>
+
+          <div style="background:rgba(7,13,24,0.6); border:1px solid var(--bg-card-border); border-radius:var(--radius-md); padding:1.25rem;">
+            <h3 style="font-size:0.95rem; font-weight:700; margin-bottom:0.5rem; color:var(--accent-rose);">🚫 Security Events & Probes</h3>
+            <div id="securityEventsStatus" style="font-size:0.85rem; margin-bottom:0.75rem;">Loading denied probe events...</div>
+            <button class="btn btn-secondary btn-sm" onclick="showDeniedLogs()">Filter Denied Logs</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Users -->
+    <section id="usersTab" class="tab-pane">
+      <div class="vault-card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="section-title">👥 User Management</h2>
+            <p class="section-desc">Create platform accounts, assign immutable system roles, and toggle user active states.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openCreateUserModal()">➕ Add New User</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>User / Display Name</th>
+                <th>Email Address</th>
+                <th>System Role</th>
+                <th>Status</th>
+                <th>Created Date</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Audit Logs -->
+    <section id="auditTab" class="tab-pane">
+      <div class="vault-card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="section-title">📋 Global Cryptographic Audit Trail</h2>
+            <p class="section-desc">Every platform event is chained via HMAC-SHA256 seals. Tampering is mathematically impossible without detection.</p>
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-secondary btn-sm" onclick="filterAudit('ALL')">All Logs</button>
+            <button class="btn btn-secondary btn-sm" onclick="filterAudit('DENIED')">Denied Probes</button>
+            <button class="btn btn-secondary btn-sm" onclick="filterAudit('PERM')">Permissions</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Timestamp</th>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Resource</th>
+                <th>IP Address</th>
+                <th>Security Seal</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Documents Registry -->
+    <section id="documentsTab" class="tab-pane">
+      <div class="vault-card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="section-title">📁 System-Wide Document Registry</h2>
+            <p class="section-desc">Administrators inspect document metadata across the entire platform. Binary downloads remain blocked by Zero-Trust policy.</p>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>Document Title</th>
+                <th>Category</th>
+                <th>Owner Email</th>
+                <th>Size</th>
+                <th>Created At</th>
+                <th style="text-align:right;">Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminDocsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Create User -->
+  <div id="createUserModal" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">➕ Create Platform User</h3>
+        <button class="modal-close-btn" onclick="closeModal('createUserModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="createUserForm" onsubmit="handleCreateUser(event)">
+          <div class="form-group">
+            <label class="form-label" for="newDisplayName">Full Display Name</label>
+            <input type="text" id="newDisplayName" class="form-input" placeholder="e.g. John Security Analyst" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newEmail">Email Address</label>
+            <input type="email" id="newEmail" class="form-input" placeholder="user@trustvault.local" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newRole">System Role</label>
+            <select id="newRole" class="form-select" required>
+              <option value="VIEWER">VIEWER (Read-only on explicit grants)</option>
+              <option value="OWNER">OWNER (Upload & manage owned files)</option>
+              <option value="ADMIN">ADMIN (System & audit administration)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newPassword">Initial Password</label>
+            <input type="password" id="newPassword" class="form-input" placeholder="••••••••••••" required>
+          </div>
+          <div class="modal-footer" style="padding:0; border:none; margin-top:1.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('createUserModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create User</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/js/crypto-audit.js"></script>
+  <script>
+    let currentAdmin = null;
+    let allLogs = [];
+
+    async function initAdminDashboard() {
+      const token = localStorage.getItem('tv_token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) {
+          localStorage.removeItem('tv_token');
+          window.location.href = '/login';
+          return;
+        }
+        const data = await res.json();
+        currentAdmin = data.user;
+
+        if (currentAdmin.role !== 'ADMIN') {
+          alert('Access Denied: You do not have administrator privileges.');
+          if (currentAdmin.role === 'OWNER') window.location.href = '/owner/dashboard';
+          else window.location.href = '/viewer/dashboard';
+          return;
+        }
+
+        document.getElementById('userEmailSpan').textContent = currentAdmin.email;
+        bindTabs();
+        await loadStats();
+        await loadUsers();
+        await loadAudit();
+        await loadDocuments();
+        await verifyChain();
+      } catch (e) {
+        console.error('Init error:', e);
+      }
+    }
+
+    function bindTabs() {
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          const target = document.getElementById(tab.getAttribute('data-tab'));
+          if (target) target.classList.add('active');
+        });
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem('tv_token');
+      localStorage.removeItem('tv_user');
+      window.location.href = '/login';
+    }
+
+    function getAuthHeaders() {
+      return {
+        'Authorization': 'Bearer ' + localStorage.getItem('tv_token'),
+        'Content-Type': 'application/json'
+      };
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/admin/stats', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const stats = await res.json();
+          document.getElementById('statTotalUsers').textContent = stats.totalUsers;
+          document.getElementById('statTotalDocs').textContent = stats.totalDocuments;
+          document.getElementById('statPermChanges').textContent = stats.permissionChanges;
+          document.getElementById('statAuditTotal').textContent = stats.totalAuditLogs;
+          document.getElementById('securityEventsStatus').innerHTML = `
+            <span style="color:var(--accent-rose); font-weight:700;">${stats.deniedEvents} Denied Probes Recorded</span>
+            <div style="color:var(--text-muted); font-size:0.75rem; margin-top:2px;">Includes ungranted downloads and anti-enumeration blocks.</div>
+          `;
+        }
+      } catch (e) {}
+    }
+
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          const tbody = document.getElementById('usersTableBody');
+          tbody.innerHTML = '';
+          data.users.forEach(u => {
+            const tr = document.createElement('tr');
+            const roleBadgeClass = u.role === 'ADMIN' ? 'badge-admin' : (u.role === 'OWNER' ? 'badge-owner' : 'badge-viewer');
+            tr.innerHTML = `
+              <td><strong>${escapeHtml(u.displayName)}</strong></td>
+              <td><code>${escapeHtml(u.email)}</code></td>
+              <td><span class="badge ${roleBadgeClass}">${u.role}</span></td>
+              <td>
+                <span class="badge ${u.isActive ? 'badge-success' : 'badge-denied'}">
+                  ${u.isActive ? 'ACTIVE' : 'DEACTIVATED'}
+                </span>
+              </td>
+              <td style="font-size:0.8rem; color:var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td>
+              <td style="text-align:right;">
+                ${u.id !== currentAdmin.id ? `
+                  <button class="btn btn-secondary btn-sm" onclick="toggleUserActive('${u.id}')">
+                    ${u.isActive ? 'Deactivate' : 'Activate'}
+                  </button>
+                ` : `<span style="font-size:0.75rem; color:var(--text-muted);">Current User</span>`}
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (e) {}
+    }
+
+    async function toggleUserActive(userId) {
+      if (!confirm('Change account status for this user?')) return;
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/toggle-active`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        if (res.ok) {
+          showToast('User status updated', 'success');
+          await loadUsers();
+          await loadStats();
+        } else {
+          const d = await res.json();
+          showToast(d.error || 'Failed to update user', 'error');
+        }
+      } catch (e) {
+        showToast('Network error', 'error');
+      }
+    }
+
+    function openCreateUserModal() {
+      document.getElementById('createUserModal').classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    async function handleCreateUser(e) {
+      e.preventDefault();
+      const displayName = document.getElementById('newDisplayName').value.trim();
+      const email = document.getElementById('newEmail').value.trim();
+      const role = document.getElementById('newRole').value;
+      const password = document.getElementById('newPassword').value;
+
+      try {
+        const res = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ displayName, email, role, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`User ${email} created successfully!`, 'success');
+          closeModal('createUserModal');
+          document.getElementById('createUserForm').reset();
+          await loadUsers();
+          await loadStats();
+        } else {
+          showToast(data.error || 'Failed to create user', 'error');
+        }
+      } catch (e) {
+        showToast('Error creating user', 'error');
+      }
+    }
+
+    async function loadAudit() {
+      try {
+        const res = await fetch('/api/audit', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          allLogs = data.logs || [];
+          renderAuditTable(allLogs);
+        }
+      } catch (e) {}
+    }
+
+    function renderAuditTable(logs) {
+      const tbody = document.getElementById('auditTableBody');
+      tbody.innerHTML = '';
+      logs.forEach(log => {
+        const tr = document.createElement('tr');
+        const isDenied = log.action.includes('DENIED') || log.action.includes('REJECTED');
+        const actionBadgeClass = isDenied ? 'badge-denied' : (log.action === 'UPLOAD' ? 'badge-owner' : (log.action === 'GRANT' ? 'badge-grant' : 'badge-success'));
+        tr.innerHTML = `
+          <td>${log.id}</td>
+          <td style="font-size:0.75rem; color:var(--text-muted);">${new Date(log.timestamp).toLocaleTimeString()}</td>
+          <td><strong>${escapeHtml(log.actor_email || 'SYSTEM')}</strong></td>
+          <td><span class="badge ${actionBadgeClass}">${log.action}</span></td>
+          <td style="font-size:0.75rem;"><code>${log.resource_id || 'N/A'}</code></td>
+          <td style="font-size:0.75rem; font-family:var(--font-mono);">${log.ip_address || '127.0.0.1'}</td>
+          <td><code class="hash-snippet">${log.current_hash ? log.current_hash.substring(0, 16) + '...' : ''}</code></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterAudit(type) {
+      if (type === 'DENIED') {
+        renderAuditTable(allLogs.filter(l => l.action.includes('DENIED') || l.action.includes('REJECTED')));
+      } else if (type === 'PERM') {
+        renderAuditTable(allLogs.filter(l => l.action === 'GRANT' || l.action === 'REVOKE'));
+      } else {
+        renderAuditTable(allLogs);
+      }
+    }
+
+    function showDeniedLogs() {
+      const tab = document.querySelector('.nav-tab[data-tab="auditTab"]');
+      if (tab) tab.click();
+      filterAudit('DENIED');
+    }
+
+    async function loadDocuments() {
+      try {
+        const res = await fetch('/api/documents', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          const tbody = document.getElementById('adminDocsTableBody');
+          tbody.innerHTML = '';
+          data.documents.forEach(doc => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><strong>${escapeHtml(doc.title)}</strong></td>
+              <td><span class="badge badge-grant">${escapeHtml(doc.category)}</span></td>
+              <td><code>${escapeHtml(doc.owner_email)}</code></td>
+              <td>${(doc.file_size_bytes / 1024).toFixed(1)} KB</td>
+              <td style="font-size:0.8rem; color:var(--text-muted);">${new Date(doc.created_at).toLocaleDateString()}</td>
+              <td style="text-align:right;">
+                <button class="btn btn-secondary btn-sm" onclick="testAdminDownload('${doc.id}')" title="Test Admin binary download restriction">
+                  🚫 Test Download (Isolated)
+                </button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (e) {}
+    }
+
+    async function testAdminDownload(docId) {
+      try {
+        const res = await fetch(`/api/documents/${docId}/stream`, { headers: getAuthHeaders() });
+        if (res.status === 404) {
+          showToast('Zero-Trust Guard Passed: 404 Not Found (Admin is blocked from downloading private binary)', 'success');
+        } else {
+          showToast(`Unexpected status: ${res.status}`, 'error');
+        }
+        await loadAudit();
+        await loadStats();
+      } catch (e) {
+        showToast('Request tested', 'info');
+      }
+    }
+
+    async function verifyChain() {
+      const box = document.getElementById('chainHealthStatus');
+      try {
+        const res = await fetch('/api/audit/verify-chain');
+        const data = await res.json();
+        if (data.valid) {
+          box.innerHTML = `<span style="color:var(--accent-emerald); font-weight:700;">✅ Intact: ${data.total} entries cryptographically sealed. Zero tampering detected.</span>`;
+        } else {
+          box.innerHTML = `<span style="color:var(--accent-rose); font-weight:700;">❌ Broken at entry #${data.brokenAt}!</span>`;
+        }
+      } catch (e) {
+        box.textContent = 'Verification service offline';
+      }
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<span>${type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️')}</span><span>${escapeHtml(msg)}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    document.addEventListener('DOMContentLoaded', initAdminDashboard);
+  </script>
+</body>
+</html>
+

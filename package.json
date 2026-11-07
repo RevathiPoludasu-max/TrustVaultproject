@@ -1,0 +1,22 @@
+{
+  "name": "trustvault",
+  "version": "1.0.0",
+  "description": "Ultra-secure document sharing platform featuring cryptographically verifiable audit trails and server-enforced object-level access control (ALAC/ABAC)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/server.test.js tests/role_dashboards.test.js",
+    "verify": "node tests/verify_all.js"
+  },
+  "keywords": [
+    "security",
+    "zero-trust",
+    "abac",
+    "audit-trail",
+    "cryptography",
+    "anti-enumeration"
+  ],
+  "author": "TrustVault Security Engineering",
+  "license": "Apache-2.0",
+  "type": "commonjs"
+}

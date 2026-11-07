@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustVault — Secure Sign In</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .login-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--bg-card-border);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem 2rem;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: var(--shadow-card);
+    }
+    .login-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      justify-content: center;
+    }
+    .login-brand img {
+      width: 42px;
+      height: 42px;
+      filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.4));
+    }
+    /* Role Selector Tabs */
+    .role-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.5rem;
+      background: rgba(7, 13, 24, 0.75);
+      padding: 0.35rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--bg-card-border);
+      margin-bottom: 1.5rem;
+    }
+    .role-tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.55rem 0.5rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      transition: all 0.2s ease;
+    }
+    .role-tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .role-tab-btn.active[data-role="ADMIN"] {
+      background: rgba(139, 92, 246, 0.2);
+      border-color: rgba(139, 92, 246, 0.6);
+      color: #c084fc;
+      box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
+    }
+    .role-tab-btn.active[data-role="OWNER"] {
+      background: rgba(0, 242, 254, 0.15);
+      border-color: rgba(0, 242, 254, 0.5);
+      color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+    }
+    .role-tab-btn.active[data-role="VIEWER"] {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: var(--accent-emerald);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+    }
+    .role-indicator-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-brand">
+        <img src="/favicon.svg" alt="TrustVault Logo">
+        <div>
+          <h1 class="brand-title" style="font-size:1.6rem;">TrustVault</h1>
+          <span class="brand-subtitle">Zero-Trust Protected Document Platform</span>
+        </div>
+      </div>
+
+      <!-- 3 Selectable Role Tabs -->
+      <div class="role-tabs" id="roleTabs">
+        <button type="button" class="role-tab-btn active" data-role="ADMIN" onclick="selectRoleTab('ADMIN')">
+          🛡️ Admin
+        </button>
+        <button type="button" class="role-tab-btn" data-role="OWNER" onclick="selectRoleTab('OWNER')">
+          📁 Owner
+        </button>
+        <button type="button" class="role-tab-btn" data-role="VIEWER" onclick="selectRoleTab('VIEWER')">
+          👁️ Viewer
+        </button>
+      </div>
+
+      <div style="text-align:center;">
+        <span id="roleIndicator" class="role-indicator-badge badge-admin">Administrator Portal</span>
+        <h2 id="loginHeading" style="font-size:1.18rem; font-weight:700; margin-bottom:0.35rem;">Admin Sign In</h2>
+        <p id="loginSubtitle" style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.5rem;">Access system analytics, audit logs, and user management.</p>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email Address</label>
+          <input type="email" id="loginEmail" class="form-input" placeholder="e.g. name@trustvault.local" required autocomplete="username">
+        </div>
+
+        <div class="form-group" style="margin-bottom:1.5rem;">
+          <label class="form-label" for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="••••••••••••" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" id="loginBtn" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem;">
+          🛡️ Sign In as Administrator
+        </button>
+      </form>
+
+      <div id="loginAlert" style="display:none; margin-top:1rem; padding:0.85rem; border-radius:var(--radius-sm); font-size:0.8rem; line-height:1.4;"></div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script>
+    let currentSelectedRole = 'ADMIN';
+
+    const roleConfig = {
+      ADMIN: {
+        indicator: 'Administrator Portal',
+        badgeClass: 'badge-admin',
+        heading: 'Admin Sign In',
+        subtitle: 'Access system analytics, audit logs, and user management.',
+        buttonText: '🛡️ Sign In as Administrator',
+        placeholder: 'admin@trustvault.local'
+      },
+      OWNER: {
+        indicator: 'Document Owner Portal',
+        badgeClass: 'badge-owner',
+        heading: 'Document Owner Sign In',
+        subtitle: 'Upload files, share with named users, and manage permissions.',
+        buttonText: '📁 Sign In as Document Owner',
+        placeholder: 'owner@trustvault.local'
+      },
+      VIEWER: {
+        indicator: 'Viewer Portal',
+        badgeClass: 'badge-viewer',
+        heading: 'Viewer Sign In',
+        subtitle: 'View and download documents explicitly shared with you.',
+        buttonText: '👁️ Sign In as Viewer',
+        placeholder: 'viewer@trustvault.local'
+      }
+    };
+
+    function selectRoleTab(role) {
+      currentSelectedRole = role;
+
+      // Update active tab buttons
+      document.querySelectorAll('.role-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-role') === role);
+      });
+
+      // Update heading, indicator, button & subtitle
+      const conf = roleConfig[role];
+      if (conf) {
+        const ind = document.getElementById('roleIndicator');
+        ind.textContent = conf.indicator;
+        ind.className = `role-indicator-badge ${conf.badgeClass}`;
+
+        document.getElementById('loginHeading').textContent = conf.heading;
+        document.getElementById('loginSubtitle').textContent = conf.subtitle;
+        document.getElementById('loginBtn').textContent = conf.buttonText;
+        document.getElementById('loginEmail').placeholder = conf.placeholder;
+      }
+
+      // Hide previous alerts
+      const alertBox = document.getElementById('loginAlert');
+      if (alertBox) alertBox.style.display = 'none';
+    }
+
+    // Check existing session
+    (async function checkExistingSession() {
+      const token = localStorage.getItem('tv_token');
+      if (token) {
+        try {
+          const res = await fetch('/api/auth/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user && data.user.role) {
+              if (data.user.role === 'ADMIN') window.location.href = '/admin/dashboard';
+              else if (data.user.role === 'OWNER') window.location.href = '/owner/dashboard';
+              else window.location.href = '/viewer/dashboard';
+            }
+          } else {
+            localStorage.removeItem('tv_token');
+            localStorage.removeItem('tv_user');
+          }
+        } catch (e) {}
+      }
+    })();
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const btn = document.getElementById('loginBtn');
+      const alertBox = document.getElementById('loginAlert');
+
+      btn.disabled = true;
+      const originalBtnText = btn.textContent;
+      btn.textContent = 'Verifying with Vault Database...';
+      alertBox.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            requestedRole: currentSelectedRole
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('tv_token', data.token);
+          localStorage.setItem('tv_user', JSON.stringify(data.user));
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+          alertBox.style.color = '#34d399';
+          alertBox.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+          alertBox.innerHTML = `✅ <strong>Authenticated!</strong> Verified database role: <code>${data.user.role}</code>. Redirecting to dashboard...`;
+
+          setTimeout(() => {
+            window.location.href = data.redirectUrl || '/';
+          }, 450);
+        } else {
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(244, 63, 94, 0.15)';
+          alertBox.style.color = '#fb7185';
+          alertBox.style.border = '1px solid rgba(244, 63, 94, 0.4)';
+          alertBox.textContent = data.error || 'Login rejected. Please check your credentials and selected role.';
+          btn.disabled = false;
+          btn.textContent = originalBtnText;
+        }
+      } catch (err) {
+        alertBox.style.display = 'block';
+        alertBox.style.background = 'rgba(244, 63, 94, 0.15)';
+        alertBox.style.color = '#fb7185';
+        alertBox.style.border = '1px solid rgba(244, 63, 94, 0.4)';
+        alertBox.textContent = 'Server connection error. Please ensure the TrustVault server is running.';
+        btn.disabled = false;
+        btn.textContent = originalBtnText;
+      }
+    }
+  </script>
+</body>
+</html>

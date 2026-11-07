@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f2fe" />
+      <stop offset="100%" stop-color="#4facfe" />
+    </linearGradient>
+    <linearGradient id="lockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd200" />
+      <stop offset="100%" stop-color="#f7971e" />
+    </linearGradient>
+  </defs>
+  <path d="M32 4 L54 12 V30 C54 44 44 56 32 60 C20 56 10 44 10 30 V12 Z" fill="#0d1527" stroke="url(#shieldGrad)" stroke-width="3" />
+  <rect x="22" y="28" width="20" height="18" rx="3" fill="url(#lockGrad)" />
+  <path d="M26 28 V21 C26 17.7 28.7 15 32 15 C35.3 15 38 17.7 38 21 V28" fill="none" stroke="url(#lockGrad)" stroke-width="3.5" stroke-linecap="round" />
+  <circle cx="32" cy="36" r="2.5" fill="#0d1527" />
+  <path d="M32 38.5 V42" stroke="#0d1527" stroke-width="2" stroke-linecap="round" />
+</svg>
+

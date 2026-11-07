@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustVault — Viewer Portal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-top">
+      <a href="/viewer/dashboard" class="brand-wrapper">
+        <img src="/favicon.svg" alt="TrustVault Logo" class="brand-logo">
+        <div>
+          <span class="brand-title">TrustVault</span>
+          <span class="brand-subtitle">Authorized Viewer Portal</span>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <span class="badge badge-viewer" id="userRoleBadge">VIEWER</span>
+        <span id="userEmailSpan" style="font-size:0.82rem; color:var(--text-muted); font-weight:600;">viewer@trustvault.local</span>
+        <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+      </div>
+    </div>
+
+    <nav class="nav-bar">
+      <button class="nav-tab active" data-tab="sharedDocsTab">📁 Shared Documents</button>
+      <button class="nav-tab" data-tab="myActivityTab">📋 My Activity History</button>
+    </nav>
+  </header>
+
+  <main class="main-container">
+    <!-- Notice Banner -->
+    <div style="background:rgba(79,172,254,0.1); border:1px solid rgba(79,172,254,0.3); border-radius:var(--radius-md); padding:0.85rem 1.25rem; margin-bottom:1.5rem; font-size:0.82rem; color:#bae6fd;">
+      🔒 <strong>Viewer Read-Only Policy:</strong> You only have access to documents explicitly shared with you by an Owner. Uploading, editing, sharing, or deleting documents is prohibited by strict server-side access controls.
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+      <div class="stat-card stat-card-cyan">
+        <div class="stat-icon">📁</div>
+        <div class="stat-info">
+          <span id="statAccessibleDocs" class="stat-value">--</span>
+          <span class="stat-label">Accessible Shared Files</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-emerald">
+        <div class="stat-icon" style="color:var(--accent-emerald); background:rgba(16,185,129,0.15);">👁️</div>
+        <div class="stat-info">
+          <span class="stat-value">Read-Only</span>
+          <span class="stat-label">Security Role</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-amber">
+        <div class="stat-icon" style="color:var(--accent-amber); background:rgba(245,158,11,0.15);">⚡</div>
+        <div class="stat-info">
+          <span class="stat-value">25s Links</span>
+          <span class="stat-label">Ephemeral Streaming</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: Shared Documents -->
+    <section id="sharedDocsTab" class="tab-pane active">
+      <div class="vault-card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="section-title">📁 Documents Shared With You</h2>
+            <p class="section-desc">Documents authorized by their respective owners. Streaming links expire in 25 seconds.</p>
+          </div>
+        </div>
+
+        <div class="search-filter-row">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="viewerSearchInput" class="search-input" placeholder="Search shared documents by title..." oninput="filterViewerDocs()">
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>Document Title</th>
+                <th>Category</th>
+                <th>Owner</th>
+                <th>File Size</th>
+                <th>Access Level</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="viewerDocsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: My Activity -->
+    <section id="myActivityTab" class="tab-pane">
+      <div class="vault-card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="section-title">📋 Your Access Activity</h2>
+            <p class="section-desc">Permanent tamper-evident cryptographic log of your document access events.</p>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Timestamp</th>
+                <th>Action</th>
+                <th>Resource ID</th>
+                <th>IP Address</th>
+                <th>Cryptographic Seal</th>
+              </tr>
+            </thead>
+            <tbody id="viewerAuditTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Safe File Viewer -->
+  <div id="streamModal" class="modal-overlay">
+    <div class="modal-container" style="max-width:850px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">👁️ Safe Document Viewer</h3>
+          <div style="font-size:0.75rem; color:var(--text-muted);">
+            Link expires in: <strong id="streamCountdown" style="color:var(--accent-amber);">25s</strong> |
+            Checksum: <code id="streamChecksum" style="color:var(--accent-cyan);">Verifying...</code>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('streamModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="streamViewerContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="streamDownloadBtn" class="btn btn-primary btn-sm" style="display:none;">⬇️ Download</button>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('streamModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script>
+    let currentViewer = null;
+    let accessibleDocs = [];
+    let streamTimer = null;
+
+    async function initViewerDashboard() {
+      const token = localStorage.getItem('tv_token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) {
+          localStorage.removeItem('tv_token');
+          window.location.href = '/login';
+          return;
+        }
+        const data = await res.json();
+        currentViewer = data.user;
+
+        document.getElementById('userEmailSpan').textContent = currentViewer.email;
+        bindTabs();
+        await loadAccessibleDocs();
+        await loadMyActivity();
+      } catch (e) {
+        console.error('Init error:', e);
+      }
+    }
+
+    function bindTabs() {
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          const target = document.getElementById(tab.getAttribute('data-tab'));
+          if (target) target.classList.add('active');
+        });
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem('tv_token');
+      localStorage.removeItem('tv_user');
+      window.location.href = '/login';
+    }
+
+    function getAuthHeaders() {
+      return {
+        'Authorization': 'Bearer ' + localStorage.getItem('tv_token'),
+        'Content-Type': 'application/json'
+      };
+    }
+
+    async function loadAccessibleDocs() {
+      try {
+        const res = await fetch('/api/documents', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          accessibleDocs = data.documents || [];
+          document.getElementById('statAccessibleDocs').textContent = accessibleDocs.length;
+          renderViewerDocsTable(accessibleDocs);
+        }
+      } catch (e) {}
+    }
+
+    function filterViewerDocs() {
+      const q = document.getElementById('viewerSearchInput').value.trim().toLowerCase();
+      const filtered = accessibleDocs.filter(d => (d.title || '').toLowerCase().includes(q));
+      renderViewerDocsTable(filtered);
+    }
+
+    function renderViewerDocsTable(docs) {
+      const tbody = document.getElementById('viewerDocsTableBody');
+      tbody.innerHTML = '';
+
+      if (docs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No documents currently shared with you. An Owner must grant you explicit access.</td></tr>`;
+        return;
+      }
+
+      docs.forEach(doc => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(doc.title)}</strong><div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">${escapeHtml(doc.original_filename)}</div></td>
+          <td><span class="badge badge-grant">${escapeHtml(doc.category)}</span></td>
+          <td><code>${escapeHtml(doc.owner_email)}</code></td>
+          <td>${(doc.file_size_bytes / 1024).toFixed(1)} KB</td>
+          <td><span class="badge badge-viewer">${doc.user_access_level || 'READ'}</span></td>
+          <td style="text-align:right;">
+            <button class="btn btn-primary btn-sm" onclick="openStreamModal('${doc.id}')">
+              👁️ View & Download
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function openStreamModal(docId) {
+      const modal = document.getElementById('streamModal');
+      const viewer = document.getElementById('streamViewerContent');
+      const countdown = document.getElementById('streamCountdown');
+      const checksum = document.getElementById('streamChecksum');
+      const downloadBtn = document.getElementById('streamDownloadBtn');
+
+      modal.classList.add('active');
+      viewer.innerHTML = '<div style="text-align:center; padding:2rem;">Acquiring 25s stream token...</div>';
+      downloadBtn.style.display = 'none';
+
+      try {
+        const tokenRes = await fetch(`/api/documents/${docId}/stream-token`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        if (!tokenRes.ok) {
+          viewer.innerHTML = '<div style="color:var(--accent-rose); padding:2rem;">❌ Access Denied (404 Not Found) — You do not have an active permission for this file.</div>';
+          return;
+        }
+
+        const { stream_token, expires_in_seconds } = await tokenRes.json();
+        let remaining = expires_in_seconds || 25;
+        countdown.textContent = `${remaining}s`;
+
+        if (streamTimer) clearInterval(streamTimer);
+        streamTimer = setInterval(() => {
+          remaining--;
+          countdown.textContent = `${remaining}s`;
+          if (remaining <= 0) {
+            clearInterval(streamTimer);
+            countdown.textContent = 'EXPIRED';
+            downloadBtn.style.display = 'none';
+          }
+        }, 1000);
+
+        const streamRes = await fetch(`/api/documents/${docId}/stream?token=${encodeURIComponent(stream_token)}`);
+        if (!streamRes.ok) {
+          viewer.innerHTML = '<div style="color:var(--accent-rose); padding:2rem;">Stream token expired or consumed.</div>';
+          return;
+        }
+
+        checksum.textContent = streamRes.headers.get('X-Document-Checksum') || 'Verified Authentic';
+        const blob = await streamRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        if (blob.type.includes('pdf')) {
+          viewer.innerHTML = `<iframe src="${blobUrl}" style="width:100%; height:450px; border:none;"></iframe>`;
+        } else {
+          const text = await blob.text();
+          viewer.innerHTML = `<pre style="padding:1rem; background:#040812; color:#38bdf8; max-height:450px; overflow:auto;">${escapeHtml(text)}</pre>`;
+        }
+
+        downloadBtn.style.display = 'inline-flex';
+        downloadBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = 'Shared-Document.pdf';
+          a.click();
+        };
+
+        await loadMyActivity();
+      } catch (e) {
+        viewer.innerHTML = `<div style="color:var(--accent-rose); padding:2rem;">Stream error: ${e.message}</div>`;
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+      if (id === 'streamModal' && streamTimer) clearInterval(streamTimer);
+    }
+
+    async function loadMyActivity() {
+      try {
+        const res = await fetch('/api/audit', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          const tbody = document.getElementById('viewerAuditTableBody');
+          tbody.innerHTML = '';
+          (data.logs || []).forEach(log => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${log.id}</td>
+              <td style="font-size:0.75rem; color:var(--text-muted);">${new Date(log.timestamp).toLocaleTimeString()}</td>
+              <td><span class="badge ${log.action.includes('DENIED') ? 'badge-denied' : 'badge-success'}">${log.action}</span></td>
+              <td style="font-size:0.75rem;"><code>${log.resource_id || 'N/A'}</code></td>
+              <td style="font-size:0.75rem;">${log.ip_address}</td>
+              <td><code class="hash-snippet">${log.current_hash ? log.current_hash.substring(0, 16) + '...' : ''}</code></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (e) {}
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    document.addEventListener('DOMContentLoaded', initViewerDashboard);
+  </script>
+</body>
+</html>
+

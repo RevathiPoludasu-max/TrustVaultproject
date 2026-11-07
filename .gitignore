@@ -1,0 +1,39 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files (DO NOT COMMIT — contains secrets)
+.env
+.env.local
+.env.production
+
+# Runtime data files
+data/trustvault_db.json
+data/vault_storage/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+trustvault/backend/.venv/
+trustvault/backend/__pycache__/
+
+# Build artifacts
+dist/
+build/
+.vercel/
+

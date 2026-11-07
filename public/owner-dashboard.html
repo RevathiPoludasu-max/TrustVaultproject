@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustVault — Owner Vault Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-top">
+      <a href="/owner/dashboard" class="brand-wrapper">
+        <img src="/favicon.svg" alt="TrustVault Logo" class="brand-logo">
+        <div>
+          <span class="brand-title">TrustVault</span>
+          <span class="brand-subtitle">Document Owner Console</span>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <span class="badge badge-owner" id="userRoleBadge">OWNER</span>
+        <span id="userEmailSpan" style="font-size:0.82rem; color:var(--text-muted); font-weight:600;">owner@trustvault.local</span>
+        <button class="btn btn-secondary btn-sm" onclick="logout()">Sign Out</button>
+      </div>
+    </div>
+
+    <nav class="nav-bar">
+      <button class="nav-tab active" data-tab="documentsTab">📁 My Vault</button>
+      <button class="nav-tab" data-tab="sharingTab">👥 Shared Access & Instant Cancel</button>
+      <button class="nav-tab" data-tab="historyTab">📋 Activity History & Seals</button>
+    </nav>
+  </header>
+
+  <main class="main-container">
+    <!-- Quick Summary Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card stat-card-cyan">
+        <div class="stat-icon">📁</div>
+        <div class="stat-info">
+          <span id="statMyFiles" class="stat-value">--</span>
+          <span class="stat-label">My Documents</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-amber">
+        <div class="stat-icon" style="color:var(--accent-amber); background:rgba(245,158,11,0.1);">👥</div>
+        <div class="stat-info">
+          <span id="statActiveShares" class="stat-value">--</span>
+          <span class="stat-label">Active Shares</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-emerald">
+        <div class="stat-icon" style="color:var(--accent-emerald); background:rgba(16,185,129,0.1);">⚡</div>
+        <div class="stat-info">
+          <span class="stat-value" style="color:var(--accent-emerald);">0 Seconds</span>
+          <span class="stat-label">Access Cancel Delay</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-purple">
+        <div class="stat-icon" style="color:var(--accent-cyan); background:rgba(0,242,254,0.1);">🔒</div>
+        <div class="stat-info">
+          <span class="stat-value">Owner Controls</span>
+          <span class="stat-label">Full Authority</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 1: Documents -->
+    <section id="documentsTab" class="tab-pane active">
+      <div class="vault-card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="section-title">📁 Your Owned Documents</h2>
+            <p class="section-desc">You have full control over these documents. Share with named users or revoke access instantly.</p>
+          </div>
+          <button class="btn btn-primary" onclick="openUploadModal()">
+            ⬆️ Upload a File
+          </button>
+        </div>
+
+        <!-- Search Bar & Category Filter Pills -->
+        <div class="search-filter-row">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="documentSearchInput" class="search-input" placeholder="Search files by title..." oninput="filterDocuments()">
+          </div>
+
+          <div class="filter-pills" id="categoryFilterPills">
+            <button class="filter-pill active" onclick="setCategoryFilter('ALL')">All</button>
+            <button class="filter-pill" onclick="setCategoryFilter('CONFIDENTIAL')">Confidential</button>
+            <button class="filter-pill" onclick="setCategoryFilter('FINANCIAL')">Financial</button>
+            <button class="filter-pill" onclick="setCategoryFilter('LEGAL')">Legal</button>
+            <button class="filter-pill" onclick="setCategoryFilter('HEALTHCARE')">Healthcare</button>
+            <button class="filter-pill" onclick="setCategoryFilter('INTERNAL')">General</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Category</th>
+                <th>Size</th>
+                <th>Security Checksum</th>
+                <th>Date Added</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="documentsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Sharing & Permissions -->
+    <section id="sharingTab" class="tab-pane">
+      <div class="vault-card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="section-title">👥 File Sharing & Instant Access Cancel</h2>
+            <p class="section-desc">Manage granular permissions (READ / EDIT) granted to named users. Revocations execute in <strong>0 seconds</strong>.</p>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Shared With</th>
+                <th>Permission Level</th>
+                <th>Shared Date</th>
+                <th>Status</th>
+                <th style="text-align:right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="permissionsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Activity History -->
+    <section id="historyTab" class="tab-pane">
+      <div class="vault-card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="section-title">📋 Document Activity & Verification History</h2>
+            <p class="section-desc">Permanent tamper-evident cryptographic log of all actions on your owned documents.</p>
+          </div>
+          <button class="btn btn-primary" onclick="verifyChain()">🔍 Verify History Seals</button>
+        </div>
+
+        <div id="chainIntegrityStatus" style="padding:0.75rem 1rem; border-radius:var(--radius-md); background:rgba(7,13,24,0.6); border:1px solid var(--bg-card-border); margin-bottom:1.25rem; font-size:0.85rem;">
+          <span style="color:var(--accent-cyan);">Click "Verify History Seals" to verify HMAC-SHA256 integrity.</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Document ID</th>
+                <th>IP Address</th>
+                <th>HMAC Seal</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Upload Document -->
+  <div id="uploadModal" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">⬆️ Upload Private File</h3>
+        <button class="modal-close-btn" onclick="closeModal('uploadModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">File Title</label>
+          <input type="text" id="docTitleInput" class="form-input" placeholder="e.g. Q4 Financial Strategy Report" maxlength="200">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="docCategorySelect" class="form-select">
+            <option value="CONFIDENTIAL">Confidential (Restricted)</option>
+            <option value="FINANCIAL">Financial (Audit Protected)</option>
+            <option value="LEGAL">Legal & Contracts</option>
+            <option value="HEALTHCARE">Healthcare & Personal</option>
+            <option value="INTERNAL">General Internal</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select File (PDF, PNG, JPEG, TXT)</label>
+          <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileUploadInput').click()">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">📄</div>
+            <div style="font-weight:600;">Drag and drop your file here, or click to browse</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">Stored in private vault with magic-byte validation and SHA-256 seal</div>
+            <input type="file" id="fileUploadInput" style="display:none;" onchange="handleFileSelect(this.files[0])">
+          </div>
+        </div>
+
+        <div style="font-size:0.75rem; color:var(--text-muted); background:rgba(7,13,24,0.6); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--bg-card-border);">
+          <strong>Sanitized File Name:</strong>
+          <span id="sanitizedFilenamePreview" style="color:var(--accent-cyan); font-family:var(--font-mono);">No file selected</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('uploadModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitUpload()">Save to Vault</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Grant Access -->
+  <div id="grantModal" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">🔑 Share Document With Named User</h3>
+        <button class="modal-close-btn" onclick="closeModal('grantModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="grantDocId">
+
+        <div class="form-group">
+          <label class="form-label">Select Recipient User</label>
+          <select id="grantTargetUser" class="form-select">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Permission Level</label>
+          <select id="grantAccessLevel" class="form-select">
+            <option value="READ">READ (View and download document)</option>
+            <option value="EDIT">EDIT (Read and modify permission)</option>
+          </select>
+        </div>
+
+        <div style="font-size:0.78rem; color:var(--text-muted); background:rgba(7,13,24,0.6); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--bg-card-border);">
+          ℹ️ Sharing a file grants access exclusively to the selected user. You can cancel access at any time with <strong>0-second instant revocation</strong>.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('grantModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="submitGrant()">Share File</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Safe File Viewer -->
+  <div id="streamModal" class="modal-overlay">
+    <div class="modal-container" style="max-width:850px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">👁️ Safe Document Viewer</h3>
+          <div style="font-size:0.75rem; color:var(--text-muted);">
+            Link expires in: <strong id="streamCountdown" style="color:var(--accent-amber);">25s</strong> |
+            Checksum: <code id="streamChecksum" style="color:var(--accent-cyan);">Verifying...</code>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('streamModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="streamViewerContent"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="streamDownloadBtn" class="btn btn-primary btn-sm" style="display:none;">⬇️ Download</button>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal('streamModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script>
+    let currentUser = null;
+    let documents = [];
+    let activeFilter = 'ALL';
+    let searchQuery = '';
+    let selectedFile = null;
+    let streamTimer = null;
+
+    async function initOwnerDashboard() {
+      const token = localStorage.getItem('tv_token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) {
+          localStorage.removeItem('tv_token');
+          window.location.href = '/login';
+          return;
+        }
+        const data = await res.json();
+        currentUser = data.user;
+
+        if (currentUser.role !== 'OWNER') {
+          alert('Access Denied: You do not have document owner privileges.');
+          if (currentUser.role === 'ADMIN') window.location.href = '/admin/dashboard';
+          else window.location.href = '/viewer/dashboard';
+          return;
+        }
+
+        document.getElementById('userEmailSpan').textContent = currentUser.email;
+        bindTabs();
+        await loadDocuments();
+        await loadPermissionsTab();
+        await loadAuditLogs();
+        await verifyChain();
+      } catch (e) {
+        console.error('Init error:', e);
+      }
+    }
+
+    function bindTabs() {
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          const target = document.getElementById(tab.getAttribute('data-tab'));
+          if (target) target.classList.add('active');
+        });
+      });
+    }
+
+    function logout() {
+      localStorage.removeItem('tv_token');
+      localStorage.removeItem('tv_user');
+      window.location.href = '/login';
+    }
+
+    function getAuthHeaders() {
+      return {
+        'Authorization': 'Bearer ' + localStorage.getItem('tv_token'),
+        'Content-Type': 'application/json'
+      };
+    }
+
+    async function loadDocuments() {
+      try {
+        const res = await fetch('/api/documents', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          documents = data.documents || [];
+          document.getElementById('statMyFiles').textContent = documents.length;
+          renderDocumentsTable();
+        }
+      } catch (e) {}
+    }
+
+    function setCategoryFilter(cat) {
+      activeFilter = cat;
+      document.querySelectorAll('#categoryFilterPills .filter-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.toUpperCase() === cat || (cat === 'ALL' && btn.textContent === 'All'));
+      });
+      renderDocumentsTable();
+    }
+
+    function filterDocuments() {
+      searchQuery = document.getElementById('documentSearchInput').value.trim().toLowerCase();
+      renderDocumentsTable();
+    }
+
+    function renderDocumentsTable() {
+      const tbody = document.getElementById('documentsTableBody');
+      tbody.innerHTML = '';
+
+      let filtered = documents;
+      if (activeFilter !== 'ALL') {
+        filtered = filtered.filter(d => (d.category || '').toUpperCase() === activeFilter);
+      }
+      if (searchQuery) {
+        filtered = filtered.filter(d => (d.title || '').toLowerCase().includes(searchQuery));
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No documents found. Click "Upload a File" to add one.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(doc => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(doc.title)}</strong><div style="font-size:0.75rem; color:var(--text-muted); font-family:var(--font-mono);">${escapeHtml(doc.original_filename)}</div></td>
+          <td><span class="badge badge-grant">${escapeHtml(doc.category)}</span></td>
+          <td>${(doc.file_size_bytes / 1024).toFixed(1)} KB</td>
+          <td><code class="hash-snippet">${doc.checksum ? doc.checksum.substring(0, 16) + '...' : 'Verified'}</code></td>
+          <td style="font-size:0.8rem; color:var(--text-muted);">${new Date(doc.created_at).toLocaleDateString()}</td>
+          <td style="text-align:right; white-space:nowrap;">
+            <button class="btn btn-primary btn-sm" onclick="openStreamModal('${doc.id}')">👁️ View</button>
+            <button class="btn btn-secondary btn-sm" onclick="openGrantModal('${doc.id}')">🔑 Share</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function handleFileSelect(file) {
+      if (!file) return;
+      selectedFile = file;
+      const titleInput = document.getElementById('docTitleInput');
+      if (titleInput && !titleInput.value) {
+        titleInput.value = file.name.replace(/\.[^/.]+$/, "");
+      }
+      document.getElementById('sanitizedFilenamePreview').textContent = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      showToast(`Selected: ${file.name}`, 'info');
+    }
+
+    function openUploadModal() {
+      document.getElementById('uploadModal').classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+      if (id === 'streamModal' && streamTimer) clearInterval(streamTimer);
+    }
+
+    async function submitUpload() {
+      const titleInput = document.getElementById('docTitleInput');
+      const categorySelect = document.getElementById('docCategorySelect');
+
+      if (!titleInput.value.trim() || !selectedFile) {
+        showToast('Please provide a file and title', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Content = e.target.result.split(',')[1];
+        try {
+          const res = await fetch('/api/documents/upload', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              title: titleInput.value.trim(),
+              category: categorySelect.value,
+              filename: selectedFile.name,
+              contentBase64: base64Content
+            })
+          });
+
+          if (res.ok) {
+            showToast('Document saved safely!', 'success');
+            closeModal('uploadModal');
+            titleInput.value = '';
+            selectedFile = null;
+            await loadDocuments();
+            await loadAuditLogs();
+          } else {
+            const d = await res.json();
+            showToast(d.error || 'Upload failed', 'error');
+          }
+        } catch (err) {
+          showToast('Upload network error', 'error');
+        }
+      };
+      reader.readAsDataURL(selectedFile);
+    }
+
+    async function openGrantModal(docId) {
+      document.getElementById('grantDocId').value = docId;
+      const userSelect = document.getElementById('grantTargetUser');
+      userSelect.innerHTML = '<option>Loading users...</option>';
+
+      try {
+        const res = await fetch('/api/auth/personas');
+        const data = await res.json();
+        userSelect.innerHTML = '';
+        (data.personas || [])
+          .filter(p => p.id !== currentUser.id)
+          .forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.displayName} (${p.email}) - [${p.role}]`;
+            userSelect.appendChild(opt);
+          });
+      } catch (e) {}
+
+      document.getElementById('grantModal').classList.add('active');
+    }
+
+    async function submitGrant() {
+      const docId = document.getElementById('grantDocId').value;
+      const targetUserId = document.getElementById('grantTargetUser').value;
+      const accessLevel = document.getElementById('grantAccessLevel').value;
+
+      try {
+        const res = await fetch('/api/permissions/grant', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ documentId: docId, targetUserId, accessLevel })
+        });
+
+        if (res.ok) {
+          showToast('Access granted successfully!', 'success');
+          closeModal('grantModal');
+          await loadPermissionsTab();
+          await loadAuditLogs();
+        } else {
+          const d = await res.json();
+          showToast(d.error || 'Failed to grant access', 'error');
+        }
+      } catch (e) {
+        showToast('Network error', 'error');
+      }
+    }
+
+    async function loadPermissionsTab() {
+      const tbody = document.getElementById('permissionsTableBody');
+      tbody.innerHTML = '';
+      let activeCount = 0;
+
+      for (const doc of documents) {
+        try {
+          const res = await fetch(`/api/documents/${doc.id}/permissions`, { headers: getAuthHeaders() });
+          if (res.ok) {
+            const data = await res.json();
+            (data.permissions || []).forEach(perm => {
+              if (!perm.revoked_at) activeCount++;
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td><strong>${escapeHtml(doc.title)}</strong></td>
+                <td>${escapeHtml(perm.user_name)} (<code>${escapeHtml(perm.user_email)}</code>)</td>
+                <td><span class="badge badge-grant">${perm.access_level}</span></td>
+                <td style="font-size:0.8rem; color:var(--text-muted);">${new Date(perm.granted_at).toLocaleTimeString()}</td>
+                <td>
+                  <span class="badge ${perm.revoked_at ? 'badge-denied' : 'badge-success'}">
+                    ${perm.revoked_at ? 'REVOKED (0s)' : 'ACTIVE'}
+                  </span>
+                </td>
+                <td style="text-align:right;">
+                  ${!perm.revoked_at ? `
+                    <button class="btn btn-danger btn-sm" onclick="revokeAccess('${perm.id}')">⚡ Revoke Access</button>
+                  ` : `<span style="font-size:0.75rem; color:var(--text-faint);">Revoked</span>`}
+                </td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+        } catch (e) {}
+      }
+
+      document.getElementById('statActiveShares').textContent = activeCount;
+      if (tbody.children.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No documents shared yet. Click "Share" on any file to invite someone.</td></tr>`;
+      }
+    }
+
+    async function revokeAccess(permId) {
+      if (!confirm('Revoke access immediately? The user will be blocked with 0s latency.')) return;
+      try {
+        const res = await fetch('/api/permissions/revoke', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ permissionId: permId })
+        });
+        if (res.ok) {
+          showToast('Access revoked in 0 seconds!', 'success');
+          await loadPermissionsTab();
+          await loadAuditLogs();
+        } else {
+          showToast('Failed to revoke access', 'error');
+        }
+      } catch (e) {
+        showToast('Network error', 'error');
+      }
+    }
+
+    async function openStreamModal(docId) {
+      const modal = document.getElementById('streamModal');
+      const viewer = document.getElementById('streamViewerContent');
+      const countdown = document.getElementById('streamCountdown');
+      const checksum = document.getElementById('streamChecksum');
+      const downloadBtn = document.getElementById('streamDownloadBtn');
+
+      modal.classList.add('active');
+      viewer.innerHTML = '<div style="text-align:center; padding:2rem;">Generating 25s ephemeral stream token...</div>';
+      downloadBtn.style.display = 'none';
+
+      try {
+        const tokenRes = await fetch(`/api/documents/${docId}/stream-token`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+        if (!tokenRes.ok) {
+          viewer.innerHTML = '<div style="color:var(--accent-rose); padding:2rem;">Access Denied (404)</div>';
+          return;
+        }
+
+        const { stream_token, expires_in_seconds } = await tokenRes.json();
+        let remaining = expires_in_seconds || 25;
+        countdown.textContent = `${remaining}s`;
+
+        if (streamTimer) clearInterval(streamTimer);
+        streamTimer = setInterval(() => {
+          remaining--;
+          countdown.textContent = `${remaining}s`;
+          if (remaining <= 0) {
+            clearInterval(streamTimer);
+            countdown.textContent = 'EXPIRED';
+            downloadBtn.style.display = 'none';
+          }
+        }, 1000);
+
+        const streamRes = await fetch(`/api/documents/${docId}/stream?token=${encodeURIComponent(stream_token)}`);
+        if (!streamRes.ok) {
+          viewer.innerHTML = '<div style="color:var(--accent-rose); padding:2rem;">Stream token expired or invalid</div>';
+          return;
+        }
+
+        checksum.textContent = streamRes.headers.get('X-Document-Checksum') || 'Verified';
+        const blob = await streamRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        if (blob.type.includes('pdf')) {
+          viewer.innerHTML = `<iframe src="${blobUrl}" style="width:100%; height:450px; border:none;"></iframe>`;
+        } else {
+          const text = await blob.text();
+          viewer.innerHTML = `<pre style="padding:1rem; background:#040812; color:#38bdf8; max-height:450px; overflow:auto;">${escapeHtml(text)}</pre>`;
+        }
+
+        downloadBtn.style.display = 'inline-flex';
+        downloadBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = 'Document.pdf';
+          a.click();
+        };
+
+        await loadAuditLogs();
+      } catch (e) {
+        viewer.innerHTML = `<div style="color:var(--accent-rose); padding:2rem;">Stream error: ${e.message}</div>`;
+      }
+    }
+
+    async function loadAuditLogs() {
+      try {
+        const res = await fetch('/api/audit', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          const tbody = document.getElementById('auditTableBody');
+          tbody.innerHTML = '';
+          (data.logs || []).forEach(log => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${log.id}</td>
+              <td style="font-size:0.75rem; color:var(--text-muted);">${new Date(log.timestamp).toLocaleTimeString()}</td>
+              <td><strong>${escapeHtml(log.actor_email)}</strong></td>
+              <td><span class="badge ${log.action.includes('DENIED') ? 'badge-denied' : 'badge-success'}">${log.action}</span></td>
+              <td style="font-size:0.75rem;"><code>${log.resource_id || 'N/A'}</code></td>
+              <td style="font-size:0.75rem;">${log.ip_address}</td>
+              <td><code class="hash-snippet">${log.current_hash ? log.current_hash.substring(0, 16) + '...' : ''}</code></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (e) {}
+    }
+
+    async function verifyChain() {
+      const box = document.getElementById('chainIntegrityStatus');
+      try {
+        const res = await fetch('/api/audit/verify-chain');
+        const data = await res.json();
+        if (data.valid) {
+          box.innerHTML = `<span style="color:var(--accent-emerald); font-weight:700;">✅ Verified: All ${data.total} audit entries are cryptographically sealed.</span>`;
+        } else {
+          box.innerHTML = `<span style="color:var(--accent-rose); font-weight:700;">❌ Tamper detected at #${data.brokenAt}!</span>`;
+        }
+      } catch (e) {
+        box.textContent = 'Verification offline';
+      }
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      toast.innerHTML = `<span>${type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️')}</span><span>${escapeHtml(msg)}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    document.addEventListener('DOMContentLoaded', initOwnerDashboard);
+  </script>
+</body>
+</html>
+
