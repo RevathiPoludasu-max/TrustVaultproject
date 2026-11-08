@@ -1,8 +1,8 @@
 /**
  * =============================================================================
- * TrustVault — Ultra-Secure Document Sharing Platform
+ * TrustVault â€” Ultra-Secure Document Sharing Platform
  * =============================================================================
- * Core Server Runtime (Node.js Built-In Standard Library — Zero External Deps)
+ * Core Server Runtime (Node.js Built-In Standard Library â€” Zero External Deps)
  * 
  * SECURITY CONTRACT & GUARANTEES:
  * 1. Server-Side Zero Trust: DB authorization check before ANY IO operation.
@@ -30,7 +30,7 @@ const STORAGE_DIR = path.join(DATA_DIR, 'vault_storage');
 const DB_FILE = path.join(DATA_DIR, 'trustvault_db.json');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 
-// Vercel runs in a read-only filesystem — detect and fall back to in-memory only
+// Vercel runs in a read-only filesystem â€” detect and fall back to in-memory only
 const IS_READONLY_FS = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
 
 // Cryptographic keys (32 bytes high entropy)
@@ -455,7 +455,7 @@ function createJwt(user, expiresInSec = 3600) {
  * - Anti-Enumeration: Denials return 404 Not Found (NEVER 403).
  */
 function evaluateDocumentAccess(user, documentId, requiredAction, req) {
-  const clientIp = req.socket.remoteAddress || '127.0.0.1';
+  const clientIp = getClientIp(req);
   const userAgent = req.headers['user-agent'] || '';
 
   const doc = db.documents[documentId];
@@ -707,6 +707,21 @@ function parseBody(req) {
 }
 
 /**
+ * Resolve the real client IP address.
+ * On Vercel/proxies, req.socket.remoteAddress is the proxy IP -- the actual
+ * client IP is forwarded in X-Forwarded-For. We take the first (leftmost)
+ * entry which is the original client, never trusting the rightmost (proxy-set).
+ */
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    // X-Forwarded-For: client, proxy1, proxy2 -- take leftmost (true client)
+    return forwarded.split(',')[0].trim();
+  }
+  return (req.socket && req.socket.remoteAddress) || '127.0.0.1';
+}
+
+/**
  * Main HTTP Server Request Handler
  */
 async function handleRequest(req, res) {
@@ -745,7 +760,7 @@ async function handleRequest(req, res) {
         return sendJson(res, 400, { error: 'Invalid credentials or incorrect login role.' });
       }
 
-      const clientIp = req.socket.remoteAddress || '127.0.0.1';
+      const clientIp = getClientIp(req);
       const user = Object.values(db.users).find(u => u.email.toLowerCase() === email.trim().toLowerCase());
       const hashedInput = hashPassword(password);
 
@@ -865,7 +880,7 @@ async function handleRequest(req, res) {
           actorRole: user.role,
           action: 'ADMIN_ACCESS_DENIED',
           resourceId: null,
-          ip: req.socket.remoteAddress || '127.0.0.1',
+          ip: getClientIp(req),
           context: { target: '/api/admin/users' }
         });
         return sendJson(res, 403, { error: 'Forbidden: Admin access required' });
@@ -922,7 +937,7 @@ async function handleRequest(req, res) {
         actorRole: user.role,
         action: 'CREATE_USER',
         resourceId: newId,
-        ip: req.socket.remoteAddress || '127.0.0.1',
+        ip: getClientIp(req),
         context: { created_user_email: newUser.email, assigned_role: newUser.role }
       });
       saveDbState();
@@ -961,7 +976,7 @@ async function handleRequest(req, res) {
         actorRole: user.role,
         action: targetUser.isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
         resourceId: targetUser.id,
-        ip: req.socket.remoteAddress || '127.0.0.1',
+        ip: getClientIp(req),
         context: { affected_email: targetUser.email, new_status: targetUser.isActive }
       });
       saveDbState();
@@ -1087,7 +1102,7 @@ async function handleRequest(req, res) {
           actorRole: user.role,
           action: AuditActions.UPLOAD_REJECTED,
           resourceId: null,
-          ip: req.socket.remoteAddress,
+          ip: getClientIp(req),
           context: { reason: 'DANGEROUS_EXECUTABLE_BLOCKED', filename: sanitizedFilename }
         });
         return sendJson(res, 415, { error: 'Executable files are prohibited' });
@@ -1125,7 +1140,7 @@ async function handleRequest(req, res) {
         actorRole: user.role,
         action: AuditActions.UPLOAD,
         resourceId: docId,
-        ip: req.socket.remoteAddress,
+        ip: getClientIp(req),
         userAgent: req.headers['user-agent'],
         context: {
           title: newDoc.title,
@@ -1224,7 +1239,7 @@ async function handleRequest(req, res) {
         actorRole: user.role,
         action: AuditActions.TOKEN_ISSUED,
         resourceId: documentId,
-        ip: req.socket.remoteAddress,
+        ip: getClientIp(req),
         context: { tokenId, ttl_seconds: STREAM_TOKEN_TTL_MS / 1000 }
       });
 
@@ -1319,7 +1334,7 @@ async function handleRequest(req, res) {
         actorRole: user.role,
         action: AuditActions.GRANT,
         resourceId: documentId,
-        ip: req.socket.remoteAddress,
+        ip: getClientIp(req),
         context: {
           permission_id: permId,
           target_user_id: targetUserId,
@@ -1359,7 +1374,7 @@ async function handleRequest(req, res) {
         actorRole: user.role,
         action: AuditActions.REVOKE,
         resourceId: perm.document_id,
-        ip: req.socket.remoteAddress,
+        ip: getClientIp(req),
         context: {
           permission_id: permissionId,
           affected_user_id: perm.user_id,
@@ -1440,7 +1455,7 @@ async function handleRequest(req, res) {
           actorRole: user.role,
           action: 'AUDIT_TAMPER_SIMULATION_DENIED',
           resourceId: null,
-          ip: req.socket.remoteAddress || '127.0.0.1',
+          ip: getClientIp(req),
           userAgent: req.headers['user-agent'] || '',
           context: { reason: 'NON_ADMIN_AUDIT_MANIPULATION_ATTEMPT' }
         });
@@ -1474,7 +1489,7 @@ async function handleRequest(req, res) {
           actorRole: user.role,
           action: 'AUDIT_RESTORE_DENIED',
           resourceId: null,
-          ip: req.socket.remoteAddress || '127.0.0.1',
+          ip: getClientIp(req),
           userAgent: req.headers['user-agent'] || '',
           context: { reason: 'NON_ADMIN_AUDIT_REWRITE_ATTEMPT' }
         });
@@ -1572,7 +1587,7 @@ function streamDocumentContent(res, doc, asDownload = false) {
   // On Vercel (read-only FS / in-memory mode): serve a placeholder response
   if (IS_READONLY_FS || !fs.existsSync(filePath)) {
     const notice = Buffer.from(
-      `TrustVault — Secure Document Platform\n` +
+      `TrustVault â€” Secure Document Platform\n` +
       `=====================================\n` +
       `Document: ${doc.title}\n` +
       `Category: ${doc.category}\n` +
@@ -1618,22 +1633,22 @@ initDatabase();
 if (require.main === module) {
   server.listen(PORT, HOST, () => {
     console.log(`=================================================================`);
-    console.log(`🛡️  TrustVault Security Platform is LIVE`);
-    console.log(`🌐  Local URL:  http://localhost:${PORT}`);
-    console.log(`🌐  Direct IP:  http://127.0.0.1:${PORT}`);
-    console.log(`🔒  Zero-Trust ALAC/ABAC: ACTIVE`);
-    console.log(`📜  Cryptographic Audit Chaining: ACTIVE (HMAC-SHA256)`);
-    console.log(`🚫  Anti-Enumeration 404 Gate: ACTIVE`);
-    console.log(`⚡  Immediate Revocation Engine: 0-SECOND LATENCY`);
+    console.log(`ðŸ›¡ï¸  TrustVault Security Platform is LIVE`);
+    console.log(`ðŸŒ  Local URL:  http://localhost:${PORT}`);
+    console.log(`ðŸŒ  Direct IP:  http://127.0.0.1:${PORT}`);
+    console.log(`ðŸ”’  Zero-Trust ALAC/ABAC: ACTIVE`);
+    console.log(`ðŸ“œ  Cryptographic Audit Chaining: ACTIVE (HMAC-SHA256)`);
+    console.log(`ðŸš«  Anti-Enumeration 404 Gate: ACTIVE`);
+    console.log(`âš¡  Immediate Revocation Engine: 0-SECOND LATENCY`);
     if (IS_READONLY_FS) {
-      console.log(`☁️   Mode: Serverless / Read-Only FS (Vercel Compatible)`);
+      console.log(`â˜ï¸   Mode: Serverless / Read-Only FS (Vercel Compatible)`);
     }
     console.log(`=================================================================`);
   });
 }
 
 // Vercel serverless: export handleRequest as the default handler
-module.exports = server;
+module.exports = handleRequest;
 module.exports.default = handleRequest;
 module.exports.handleRequest = handleRequest;
 module.exports.getDb = () => db;
@@ -1641,3 +1656,6 @@ module.exports.evaluateDocumentAccess = evaluateDocumentAccess;
 module.exports.verifyAuditChain = verifyAuditChain;
 module.exports.recordAudit = recordAudit;
 module.exports.initDatabase = initDatabase;
+
+
+

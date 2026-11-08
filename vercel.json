@@ -1,33 +1,46 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "runtime": "node",
+      "entrypoint": "server.js",
+      "installCommand": "npm install"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/server.js"
+      "source": "/api/:path*",
+      "destination": {
+        "service": "app"
+      }
     },
     {
-      "src": "/public/(.*)",
-      "dest": "/server.js"
+      "source": "/admin/dashboard",
+      "destination": {
+        "service": "app"
+      }
     },
     {
-      "src": "/(.*)",
-      "dest": "/server.js"
+      "source": "/owner/dashboard",
+      "destination": {
+        "service": "app"
+      }
+    },
+    {
+      "source": "/viewer/dashboard",
+      "destination": {
+        "service": "app"
+      }
+    },
+    {
+      "source": "/:path*",
+      "destination": {
+        "service": "app"
+      }
     }
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "server.js": {
-      "maxDuration": 30,
-      "memory": 512
-    }
   }
 }
-
