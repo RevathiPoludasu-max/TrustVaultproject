@@ -1,9 +1,9 @@
+
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
     "app": {
       "root": ".",
-      "runtime": "node",
       "entrypoint": "server.js",
       "installCommand": "npm install"
     }
@@ -11,24 +11,6 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/admin/dashboard",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/owner/dashboard",
-      "destination": {
-        "service": "app"
-      }
-    },
-    {
-      "source": "/viewer/dashboard",
       "destination": {
         "service": "app"
       }
