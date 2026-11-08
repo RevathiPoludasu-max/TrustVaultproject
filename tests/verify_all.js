@@ -454,11 +454,11 @@ async function run() {
   checkTrue('G  viewer-dashboard: viewerAuditTableBody', viewerHtml.includes('id="viewerAuditTableBody"'));
   checkTrue('G  viewer-dashboard: streamModal', viewerHtml.includes('id="streamModal"'));
 
-  // Check vercel.json is valid JSON with required Vercel Services fields
+  // Check vercel.json is valid JSON with required Vercel v2 deployment fields
   const vercelJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../vercel.json'), 'utf8'));
-  checkTrue('G  vercel.json: services block present', typeof vercelJson.services === 'object' && vercelJson.services !== null);
-  checkTrue('G  vercel.json: app service has runtime', vercelJson.services && vercelJson.services.app && typeof vercelJson.services.app.runtime === 'string');
-  checkTrue('G  vercel.json: rewrites array present', Array.isArray(vercelJson.rewrites));
+  checkTrue('G  vercel.json: version 2 present', vercelJson.version === 2);
+  checkTrue('G  vercel.json: builds array present', Array.isArray(vercelJson.builds) && vercelJson.builds.length > 0);
+  checkTrue('G  vercel.json: routes array present', Array.isArray(vercelJson.routes) && vercelJson.routes.length > 0);
 
   // ============================================================
   // SECTION H: Security Headers

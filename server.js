@@ -34,13 +34,18 @@ const PUBLIC_DIR = path.join(__dirname, 'public');
 const IS_READONLY_FS = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
 
 // Cryptographic keys (32 bytes high entropy)
-const AUDIT_HMAC_KEY = process.env.AUDIT_HMAC_KEY;
-const JWT_SECRET = process.env.JWT_SECRET;
-const STREAM_SECRET = process.env.STREAM_SECRET;
+// Fallbacks are intentionally weak — only used in local dev/test.
+// On Vercel (production), all three MUST be set as environment variables.
+const AUDIT_HMAC_KEY = process.env.AUDIT_HMAC_KEY || (IS_READONLY_FS ? null : 'trustvault-audit-hmac-master-key-2026-v1-32chars');
+const JWT_SECRET     = process.env.JWT_SECRET     || (IS_READONLY_FS ? null : 'trustvault-jwt-master-signing-key-2026-v1-32bytes');
+const STREAM_SECRET  = process.env.STREAM_SECRET  || (IS_READONLY_FS ? null : 'trustvault-stream-ephemeral-key-2026-32bytes');
 
-for (const [name, value] of Object.entries({ AUDIT_HMAC_KEY, JWT_SECRET, STREAM_SECRET })) {
-  if (typeof value !== 'string' || value.length < 32) {
-    throw new Error(`[TrustVault] Missing or weak environment variable: ${name}. Set a random secret of at least 32 characters in Vercel.`);
+// In production (Vercel), reject startup if any secret is missing or too short
+if (IS_READONLY_FS) {
+  for (const [name, value] of Object.entries({ AUDIT_HMAC_KEY, JWT_SECRET, STREAM_SECRET })) {
+    if (typeof value !== 'string' || value.length < 32) {
+      throw new Error(`[TrustVault] Missing or weak environment variable: ${name}. Set a random secret of at least 32 characters in Vercel.`);
+    }
   }
 }
 const STREAM_TOKEN_TTL_MS = 25 * 1000; // 25 seconds hard max (TV-SEC-002)
@@ -1636,7 +1641,7 @@ function streamDocumentContent(res, doc, asDownload = false) {
 // -----------------------------------------------------------------------------
 initDatabase();
 
-if (require.main === module || process.env.VERCEL === '1') {
+if (require.main === module) {
   server.listen(PORT, HOST, () => {
     console.log(`=================================================================`);
     console.log(`ðŸ›¡ï¸  TrustVault Security Platform is LIVE`);
