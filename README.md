@@ -48,6 +48,13 @@ The following test accounts are provided for project evaluation.
 | Viewer A | `viewer_a@trustvault.local` | `Viewer@123` |
 | Viewer B | `viewer_b@trustvault.local` | `Viewer@123` |
 
+### Viewer Account Explanation
+
+- **Viewer A:** A user who is granted permission by the Owner to access a specific document.
+- **Viewer B:** A separate user who is not granted permission to access that same document.
+
+This demonstrates that Viewer A can access the shared document, while Viewer B cannot access it without permission.
+
 *Note: These are dedicated demo accounts created exclusively for project evaluation. They contain test data and should not be used for personal purposes.*
 
 ## Developer
