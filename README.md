@@ -4,17 +4,18 @@
 
 ## About the Project
 
-TrustVault is a secure document-sharing platform developed to protect sensitive documents and provide controlled access to users. It follows Zero-Trust principles and uses role-based access control to prevent unauthorized access.
+TrustVault is a secure document-sharing platform developed to protect sensitive documents and provide controlled access to users. It follows Zero-Trust principles and uses Role-Based Access Control (RBAC) to prevent unauthorized access.
 
 ## Features
 
 - Secure User Authentication
-- Role-Based Access Control
-- Admin and Viewer Roles
+- Role-Based Access Control (RBAC)
+- Admin, Owner and Viewer Roles
 - Document Upload and Download
 - Secure Document Sharing
 - Access Permission Validation
 - Backend Security Checks
+- Controlled Document Access
 
 ## Technologies Used
 
@@ -35,7 +36,20 @@ The main purpose of TrustVault is to develop a secure document-sharing system wh
 - Authorization Testing
 - Backend Security Testing
 - Automated Verification
-  
+
+## Demo Login Credentials
+
+The following test accounts are provided for project evaluation.
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@trustvault.local` | `Admin@123` |
+| Owner | `owner@trustvault.local` | `Owner@123` |
+| Viewer A | `viewer_a@trustvault.local` | `Viewer@123` |
+| Viewer B | `viewer_b@trustvault.local` | `Viewer@123` |
+
+*Note: These are dedicated demo accounts created exclusively for project evaluation. They contain test data and should not be used for personal purposes.*
 
 ## Developer
+
 Revathi Poludasu
